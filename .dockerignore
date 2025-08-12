@@ -1,0 +1,12 @@
+.coverage
+Dockerfile
+.env.local
+.git
+.gitignore
+.nox
+noxfile.py
+*.md
+.mypy_cache
+__pycache__
+.ruff_cache
+tests
