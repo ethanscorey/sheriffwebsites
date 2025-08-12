@@ -1,8 +1,10 @@
 """Tests for validators."""
 
+import datetime as dt
+
 import pytest
 from pydantic import ValidationError
-from sheriffwebsites.validators import validate_state, soft_validate
+from sheriffwebsites.validators import validate_state, soft_validate, convert_date
 
 
 def test_validate_state() -> None:
@@ -22,3 +24,8 @@ def test_soft_validate() -> None:
 
     assert soft_validate("foo", handler) == "FOO"
     assert soft_validate("bar", handler) is None
+
+
+def test_convert_date() -> None:
+    """Test date conversion."""
+    assert convert_date("09/06/1993") == dt.datetime(1993, 9, 6)

@@ -7,6 +7,8 @@ from typing import Annotated, TypeVar
 
 from pydantic import (
     AfterValidator,
+    BeforeValidator,
+    AliasChoices,
     BaseModel,
     Field,
     ValidationInfo,
@@ -15,7 +17,7 @@ from pydantic import (
 )
 
 from .utils import allows_none
-from .validators import soft_validate, validate_state
+from .validators import convert_date, soft_validate, validate_state
 
 
 X = TypeVar("X")
@@ -57,6 +59,8 @@ class Race(StrEnum):
         Persons categorized as American Indian/Native American/Alaskan Native
     OTHER
         Persons categorized as some other race.
+    UNKNOWN
+        Persons whose race is unknown.
     WHITE
         Persons categorized as White/Caucasian.
     """
@@ -67,6 +71,7 @@ class Race(StrEnum):
     MULTIRACIAL = "M"
     NATIVE = "I"
     OTHER = "O"
+    UNKNOWN = "U"
     WHITE = "W"
 
 
@@ -79,11 +84,13 @@ class BookingItem(BaseModel):
 
     Attributes
     ----------
+    county : str
+        The county jail in which the person was booked.
     booking_id : str
         The unique ID for the booking.
     person_id : str
         The unique ID for the person booked.
-    booking_num : str
+    booking_num : str | None
         The booking number as assigned by the sheriff.
     booking_date : dt.datetime
         The booking date.
@@ -101,40 +108,58 @@ class BookingItem(BaseModel):
         The person's sex as recorded by the agency.
     race : Race
         The person's race as recorded by the agency.
-    classification : str
+    classification : str | None
         The security level classification.
-    address : str
+    arresting_agency : str | None
+        The arresting agency, if provided.
+    address : str | None
         The person's street address as recorded by the agency.
     city : str
         The person's city of residence as recorded by the agency.
-    state : State
+    state : State | None
         The person's state of residence as recorded by the agency.
     zipcode : ZipCode | None
         The person's ZIP code as recorded by the agency.
     charges : str
         The persons's charges as reported by the agency.
-    birth_date : dt.datetime
+    bond_total : float | None
+        The total bond, if any.
+    birth_date : Annotated[dt.datetime, BeforeValidator(convert_date)]
         The person's date of birth as recorded by the agency.
+    court_date : dt.datetime | None
+        The court date as recorded by the agency, if any.
     """
 
+    county: str
     booking_id: str = Field(validation_alias="BookingID")
     person_id: str = Field(validation_alias="InmateID")
-    booking_num: str = Field(validation_alias="BookingNum")
-    booking_date: dt.datetime = Field(validation_alias="BookingDate")
-    release_date: dt.datetime | None = Field(validation_alias="ReleaseDate")
-    held_for: str | None = Field(validation_alias="heldfor")
+    booking_num: str | None = Field(default=None, validation_alias="BookingNum")
+    booking_date: dt.datetime = Field(
+        validation_alias=AliasChoices("BookingDate", "bookingDate")
+    )
+    release_date: dt.datetime | None = Field(
+        default=None, validation_alias="ReleaseDate"
+    )
+    held_for: str | None = Field(default=None, validation_alias="heldfor")
     first_name: str = Field(validation_alias="FName")
-    middle_name: str | None = Field(validation_alias="MName")
+    middle_name: str | None = Field(default=None, validation_alias="MName")
     last_name: str = Field(validation_alias="LName")
-    sex: Sex = Field(validation_alias="Sex")
+    sex: Sex = Field(validation_alias=AliasChoices("Sex", "Gender"))
     race: Race = Field(validation_alias="Race")
-    classification: str = Field(validation_alias="Classification")
-    address: str = Field(validation_alias="Address")
+    classification: str | None = Field(default=None, validation_alias="Classification")
+    arresting_agency: str | None = Field(
+        default=None, validation_alias="ArrestingAgency"
+    )
+    address: str | None = Field(default=None, validation_alias="Address")
     city: str = Field(validation_alias="City")
-    state: State = Field(validation_alias="State")
-    zipcode: ZipCode | None = Field(validation_alias="Zip")
+    state: State | None = Field(validation_alias="State")
+    zipcode: ZipCode | None = Field(default=None, validation_alias="Zip")
     charges: str = Field(validation_alias="Charges")
-    birth_date: dt.datetime = Field(validation_alias="dob")
+    bond_total: float | None = Field(default=None, validation_alias="BondTotal")
+    birth_date: Annotated[dt.datetime, BeforeValidator(convert_date)] = Field(
+        validation_alias=AliasChoices("dob", "DOB", "BirthDate"),
+    )
+    court_date: dt.datetime | None = Field(default=None, validation_alias="CourtDate")
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -181,17 +206,46 @@ class BookingItem(BaseModel):
     ) -> Y | None:
         """Set field to None on validation error if field is optional.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         value : X
             The value to validate.
         handler: Callable[[X], Y]
             The validator handler for the current field.
         info : ValidationInfo
             The current validation context.
+
+        Returns
+        -------
+        Y | None
+            The validated value, or None.
+
+        Raises
+        ------
+        ValueError
+            Raised if the field name is missing.
         """
         if info.field_name is None:
             raise ValueError("Field name not defined.")
         if allows_none(cls.model_fields[info.field_name].annotation):
             return None if value == "" else soft_validate(value, handler)
         return handler(value)
+
+    @field_validator("*", mode="before")
+    @classmethod
+    def strip_string(cls, value: X | str) -> X | str:
+        """Strip whitespace from string values.
+
+        Parameters
+        ----------
+        value : X | str
+            The value to strip, if needed.
+
+        Returns
+        -------
+        X | str
+            The value, possibly strippped.
+        """
+        if isinstance(value, str):
+            return value.strip()
+        return value

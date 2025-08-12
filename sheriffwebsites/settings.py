@@ -21,8 +21,8 @@ ROBOTSTXT_OBEY = True
 
 # Concurrency and throttling settings
 # CONCURRENT_REQUESTS = 16
-CONCURRENT_REQUESTS_PER_DOMAIN = 1
-DOWNLOAD_DELAY = 2
+CONCURRENT_REQUESTS_PER_IP = 1
+DOWNLOAD_DELAY = 2.5
 
 # Disable cookies (enabled by default)
 # COOKIES_ENABLED = False
@@ -83,3 +83,32 @@ DOWNLOAD_DELAY = 2
 
 # Set settings whose default value is deprecated to a future-proof value
 FEED_EXPORT_ENCODING = "utf-8"
+
+SHERIFF_SITES = {
+    "Bryan": {"site": "https://bryancountyso.com", "key": "bookie"},
+    "Caddo": {"site": "https://caddocountysheriff.com", "key": "bookie"},
+    "Canadian": {"site": "https://www.ccsheriff.net", "key": "bookie"},
+    "Carter": {"site": "https://cartercountysheriff.us", "key": "querybookie"},
+    "Cimarron": {"site": "https://cimarroncoso.gov", "key": "querybookie"},
+    "Craig": {"site": "https://craigcountyso.com", "key": "bookie"},
+    "Creek": {
+        "site": "https://creekcountysheriff.gov",
+        "key": "querybookie",
+        "booking_key": "InmateId",
+    },
+    "Custer": {"site": "https://custercountysheriff.com", "key": "bookie"},
+    "Delaware": {"site": "https://delcosheriff.org", "key": "bookie"},
+    "Lincoln": {
+        "site": "https://lincolncountysheriffok.gov",
+        "key": "querybookie",
+        "booking_key": "InmateId",
+    },
+    "Logan": {"site": "https://logancountyso.org", "key": "bookie"},
+    "Love": {"site": "https://lovecosheriff.com", "key": "querybookie"},
+    "Major": {"site": "https://majorcosheriff.com", "key": "bookie"},
+    "Pawnee": {"site": "https://www.pawneecountysheriff.com", "key": "bookie"},
+    "Payne": {"site": "https://paynecountyok.gov", "key": "querybookie"},
+    "Sequoyah": {"site": "https://www.scsok.org", "key": "bookie"},
+    "Wagoner": {"site": "https://wagonercountyso.org", "key": "bookie"},
+    "Washington": {"site": "https://www.washingtoncosheriff.com", "key": "bookie"},
+}

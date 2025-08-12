@@ -27,9 +27,9 @@ def booking_item() -> BookingItem:
         "State": "OK",
         "Zip": "730  ",
         "Charges": "DRIVING WHILE LICENSE SUSPENDED (DUS) OR REVOKED (DUR)",
-        "dob": "1976-01-10",
+        "dob": "01/01/1976",
     }
-    return BookingItem(**test_data)
+    return BookingItem(**(test_data | {"county": "Caddo"}))
 
 
 def test_age(booking_item: BookingItem) -> None:
