@@ -141,9 +141,11 @@ class BookingItem(BaseModel):
         default=None, validation_alias="ReleaseDate"
     )
     held_for: str | None = Field(default=None, validation_alias="heldfor")
-    first_name: str = Field(validation_alias="FName")
-    middle_name: str | None = Field(default=None, validation_alias="MName")
-    last_name: str = Field(validation_alias="LName")
+    first_name: str = Field(validation_alias=AliasChoices("FName", "FirstName"))
+    middle_name: str | None = Field(
+        default=None, validation_alias=AliasChoices("MName", "MiddleName")
+    )
+    last_name: str = Field(validation_alias=AliasChoices("LName", "LastName"))
     sex: Sex = Field(validation_alias=AliasChoices("Sex", "Gender"))
     race: Race = Field(validation_alias="Race")
     classification: str | None = Field(default=None, validation_alias="Classification")

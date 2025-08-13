@@ -6,7 +6,12 @@ from typing import Any
 import scrapy
 
 from sheriffwebsites.items import BookingItem
-from sheriffwebsites.utils import delist_maybe
+from sheriffwebsites.utils import (
+    delist_maybe,
+    ensure_json_response,
+    get_county_info,
+    get_booking_url,
+)
 from sheriffwebsites import settings
 
 
@@ -53,15 +58,8 @@ class BookingSpider(scrapy.Spider):
         ------
         scrapy.Request | BookingItem
             A request for each individual booking, or the booking itself.
-
-        Raises
-        ------
-        ValueError
-            Raised if the response isn't the correct type.
         """
-        if not hasattr(response, "json"):
-            raise ValueError("Invalid response.")
-        bookings = response.json()
+        bookings = ensure_json_response(response)
         for booking in bookings.get("query", []):
             yield self.get_booking(booking, county)
 
@@ -83,13 +81,9 @@ class BookingSpider(scrapy.Spider):
             A request for individual booking data or the booking itself.
         """
         if len(booking.keys()) > 1:
-            return BookingItem(**booking | {"county": county})
-        site = settings.SHERIFF_SITES[county]["site"]
-        booking_key = settings.SHERIFF_SITES[county].get("booking_key", "BookingID")
-        booking_param = booking_key.lower()
-        booking_id = booking[booking_key]
+            return self.get_booking_item(booking, county)
         return scrapy.Request(
-            url=f"{site}/dmxConnect/api/Booking/getbookie.php?{booking_param}={booking_id}",
+            url=get_booking_url(county, booking),
             callback=self.parse_booking,
             cb_kwargs={"county": county},
         )
@@ -113,11 +107,28 @@ class BookingSpider(scrapy.Spider):
 
         Raises
         ------
-        ValueError
+        InvalidResponseError
             Raised if the response isn't the correct type.
         """
-        if not hasattr(response, "json"):
-            raise ValueError("Invalid response.")
-        data_key = settings.SHERIFF_SITES[county]["key"]
-        person = delist_maybe(response.json()[data_key]) | {"county": county}
-        yield BookingItem(**person)
+        response_data = ensure_json_response(response)
+        data_key = get_county_info(county, "key")
+        person = delist_maybe(response_data[data_key])
+        yield self.get_booking_item(person, county)
+
+    @staticmethod
+    def get_booking_item(data: dict[str, Any], county: str) -> BookingItem:
+        """Create a BookingItem from scraped data.
+
+        Parameters
+        ----------
+        data : dict[str, Any]
+            The scraped data.
+        county : str
+            The county from which the data was scraped.
+
+        Returns
+        -------
+        BookingItem
+            The booking item.
+        """
+        return BookingItem(**(data | {"county": county}))
