@@ -5,6 +5,8 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "azure-identity>=1.25.0",
+    "azure-storage-blob>=12.26.0",
     "pydantic>=2.11.7",
     "scrapy>=2.13.3",
     "us>=3.2.0",
@@ -16,6 +18,8 @@ test = [
     "pytest-cov>=6.2.1",
     "pytest>=8.4.1",
     "typeguard>=4.4.4",
+    "pytest-mock>=3.15.1",
+    "pytest-twisted>=1.14.3",
 ]
 
 [tool.mypy]
@@ -26,3 +30,8 @@ show_column_numbers = true
 show_error_context = true
 disallow_any_generics = false
 plugins = "pydantic.mypy"
+
+[tool.pytest.ini_options]
+markers = [
+    "e2e: mark as end-to-end test."
+]

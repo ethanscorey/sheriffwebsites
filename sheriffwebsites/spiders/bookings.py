@@ -1,16 +1,17 @@
 """A Scrapy Spider for scraping bookings."""
 
 from collections.abc import Iterator, AsyncIterator
-from typing import Any
+from typing import Any, cast
 
+from pydantic import ValidationError
 import scrapy
 
 from sheriffwebsites.items import BookingItem
 from sheriffwebsites.utils import (
-    delist_maybe,
     ensure_json_response,
-    get_county_info,
     get_booking_url,
+    get_county_info,
+    stringify_dict,
 )
 from sheriffwebsites import settings
 
@@ -26,6 +27,37 @@ class BookingSpider(scrapy.Spider):
 
     name: str = "sheriffwebsites"
 
+    def request_query(
+        self, county: str, formdata: None | dict[str, Any] = None
+    ) -> scrapy.FormRequest:
+        """Make a query request with the provided form data.
+
+        Parameters
+        ----------
+        county : str
+            The county to query.
+        formdata : None | dict[str, Any]
+            The current form data.
+
+        Returns
+        -------
+        scrapy.FormRequest
+            A new request.
+        """
+        formdata = formdata or {}
+        root_site = get_county_info(county, "site")
+        api_endpoint = get_county_info(
+            county, "read_endpoint", "dmxConnect/api/Booking/Read.php"
+        )
+        limit = get_county_info(county, "limit", 100)
+        formdata.update({"limit": limit})
+        return scrapy.FormRequest(
+            f"{root_site}/{api_endpoint}",
+            callback=self.parse_results,
+            cb_kwargs={"county": county},
+            formdata=stringify_dict(formdata),
+        )
+
     async def start(self) -> AsyncIterator[scrapy.Request]:
         """Send initial requests to each site.
 
@@ -34,15 +66,10 @@ class BookingSpider(scrapy.Spider):
         scrapy. Request
             The initial requests.
         """
-        sites = settings.SHERIFF_SITES
-        for county, county_data in sites.items():
-            yield scrapy.Request(
-                f"{county_data['site']}/dmxConnect/api/Booking/Read2.php",
-                callback=self.parse_initial,
-                cb_kwargs={"county": county},
-            )
+        for county in settings.SHERIFF_SITES:
+            yield self.request_query(county)
 
-    def parse_initial(
+    def parse_results(
         self, response: scrapy.http.Response, county: str
     ) -> Iterator[scrapy.Request | BookingItem]:
         """Parse initial array of booking IDs and send requests for each.
@@ -59,14 +86,20 @@ class BookingSpider(scrapy.Spider):
         scrapy.Request | BookingItem
             A request for each individual booking, or the booking itself.
         """
-        bookings = ensure_json_response(response)
-        for booking in bookings.get("query", []):
-            yield self.get_booking(booking, county)
+        results = self.get_results(response, county)
+        offset = results["offset"]
+        total = results["total"]
+        limit = results["limit"]
+        for booking in results["data"]:
+            try:
+                yield self.get_booking_item(booking, county)
+            except ValidationError:
+                yield self.request_booking(booking, county)
+        if offset + limit <= total:
+            yield self.request_query(county, {"offset": offset + limit})
 
-    def get_booking(
-        self, booking: dict[str, Any], county: str
-    ) -> scrapy.Request | BookingItem:
-        """Return a request for an individual booking record.
+    def request_booking(self, booking: dict[str, Any], county: str) -> scrapy.Request:
+        """Request an individual booking.
 
         Parameters
         ----------
@@ -77,11 +110,9 @@ class BookingSpider(scrapy.Spider):
 
         Returns
         -------
-        scrapy.Request | BookingItem
-            A request for individual booking data or the booking itself.
+        scrapy.Request
+            A request for the individual booking.
         """
-        if len(booking.keys()) > 1:
-            return self.get_booking_item(booking, county)
         return scrapy.Request(
             url=get_booking_url(county, booking),
             callback=self.parse_booking,
@@ -116,7 +147,26 @@ class BookingSpider(scrapy.Spider):
         yield self.get_booking_item(person, county)
 
     @staticmethod
-    def get_booking_item(data: dict[str, Any], county: str) -> BookingItem:
+    def get_results(response: scrapy.http.Response, county: str) -> dict[str, Any]:
+        """Get the query results from the response body.
+
+        Parameters
+        ----------
+        response : scrapy.http.Response
+            The initial response.
+        county : str
+            The county jail being scraped.
+
+        Returns
+        -------
+        dict[str, Any]
+            The results dictionary.
+        """
+        json_response = ensure_json_response(response)
+        results_key = get_county_info(county, "results_key", "bookings")
+        return cast(dict[str, Any], json_response[results_key])
+
+    def get_booking_item(self, data: dict[str, Any], county: str) -> BookingItem:
         """Create a BookingItem from scraped data.
 
         Parameters

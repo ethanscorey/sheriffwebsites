@@ -22,7 +22,7 @@ ROBOTSTXT_OBEY = True
 # Concurrency and throttling settings
 # CONCURRENT_REQUESTS = 16
 CONCURRENT_REQUESTS_PER_IP = 1
-DOWNLOAD_DELAY = 2.5
+DOWNLOAD_DELAY = 10
 
 # Disable cookies (enabled by default)
 # COOKIES_ENABLED = False
@@ -85,30 +85,50 @@ DOWNLOAD_DELAY = 2.5
 FEED_EXPORT_ENCODING = "utf-8"
 
 SHERIFF_SITES = {
-    "Bryan": {"site": "https://bryancountyso.com", "key": "bookie"},
-    "Caddo": {"site": "https://caddocountysheriff.com", "key": "bookie"},
-    "Canadian": {"site": "https://www.ccsheriff.net", "key": "bookie"},
-    "Carter": {"site": "https://cartercountysheriff.us", "key": "querybookie"},
-    "Cimarron": {"site": "https://cimarroncoso.gov", "key": "querybookie"},
-    "Craig": {"site": "https://craigcountyso.com", "key": "bookie"},
+    "Bryan": {"site": "https://bryancountyso.com", "results_key": "querybookings"},
+    "Caddo": {"site": "https://caddocountysheriff.com"},
+    "Canadian": {"site": "https://www.ccsheriff.net"},
+    "Carter": {
+        "site": "https://cartercountysheriff.us",
+        "results_key": "querybookings",
+    },
+    "Cimarron": {"site": "https://cimarroncoso.gov", "results_key": "querybookings"},
+    "Craig": {"site": "https://craigcountyso.com"},
     "Creek": {
         "site": "https://creekcountysheriff.gov",
-        "key": "querybookie",
-        "booking_key": "InmateId",
+        "results_key": "querybookings",
     },
-    "Custer": {"site": "https://custercountysheriff.com", "key": "bookie"},
-    "Delaware": {"site": "https://delcosheriff.org", "key": "bookie"},
+    "Custer": {
+        "site": "https://custercountysheriff.com",
+        "results_key": "querybookings",
+    },
+    "Delaware": {"site": "https://delcosheriff.org"},
     "Lincoln": {
         "site": "https://lincolncountysheriffok.gov",
-        "key": "querybookie",
-        "booking_key": "InmateId",
+        "results_key": "querybookings",
     },
-    "Logan": {"site": "https://logancountyso.org", "key": "bookie"},
-    "Love": {"site": "https://lovecosheriff.com", "key": "querybookie"},
-    "Major": {"site": "https://majorcosheriff.com", "key": "bookie"},
-    "Pawnee": {"site": "https://www.pawneecountysheriff.com", "key": "bookie"},
-    "Payne": {"site": "https://paynecountyok.gov", "key": "querybookie"},
-    "Sequoyah": {"site": "https://www.scsok.org", "key": "bookie"},
-    "Wagoner": {"site": "https://wagonercountyso.org", "key": "bookie"},
-    "Washington": {"site": "https://www.washingtoncosheriff.com", "key": "bookie"},
+    "Logan": {"site": "https://logancountyso.org"},
+    "Love": {"site": "https://lovecosheriff.com", "results_key": "querybookings"},
+    "Major": {"site": "https://majorcosheriff.com"},
+    "Pawnee": {
+        "site": "https://www.pawneecountysheriff.com",
+        "results_key": "querybookings",
+    },
+    "Payne": {"site": "https://paynecountyok.gov", "results_key": "querybookings"},
+    "Sequoyah": {"site": "https://www.scsok.org"},
+    "Wagoner": {
+        "site": "https://wagonercountyso.org",
+        "booking_endpoint": "/dmxConnect/api/Booking/getBookie.php",
+    },
+    "Washington": {"site": "https://www.washingtoncosheriff.com"},
 }
+
+FEEDS = {
+    "az://my-container/exports/%(name)s/%(time)s.csv": {
+        "format": "csv",
+        "encoding": "utf-8",
+        "item_classes": ["sheriffwebsites.items.BookingItem"],
+    }
+}
+
+FEED_STORAGES = {"az": "sheriffwebsites.feedstorages.azure_blob.AzureBlobFeedStorage"}

@@ -131,8 +131,8 @@ class BookingItem(BaseModel):
     """
 
     county: str
-    booking_id: str = Field(validation_alias="BookingID")
-    person_id: str = Field(validation_alias="InmateID")
+    booking_id: str | None = Field(default=None, validation_alias="BookingID")
+    person_id: str = Field(validation_alias=AliasChoices("InmateID", "InmateId"))
     booking_num: str | None = Field(default=None, validation_alias="BookingNum")
     booking_date: dt.datetime = Field(
         validation_alias=AliasChoices("BookingDate", "bookingDate")
@@ -153,8 +153,8 @@ class BookingItem(BaseModel):
         default=None, validation_alias="ArrestingAgency"
     )
     address: str | None = Field(default=None, validation_alias="Address")
-    city: str = Field(validation_alias="City")
-    state: State | None = Field(validation_alias="State")
+    city: str | None = Field(default=None, validation_alias="City")
+    state: State | None = Field(default=None, validation_alias="State")
     zipcode: ZipCode | None = Field(default=None, validation_alias="Zip")
     charges: str = Field(validation_alias="Charges")
     bond_total: float | None = Field(default=None, validation_alias="BondTotal")

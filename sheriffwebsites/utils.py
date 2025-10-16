@@ -71,8 +71,11 @@ def get_booking_url(county: str, booking: dict[str, Any]) -> str:
     site = get_county_info(county, "site")
     booking_key = get_county_info(county, "booking_key", "BookingID")
     booking_id = booking[booking_key]
+    booking_endpoint = get_county_info(
+        county, "booking_endpoint", "/dmxConnect/api/Booking/getbookie.php"
+    )
     booking_param = booking_key.lower()
-    return f"{site}/dmxConnect/api/Booking/getbookie.php?{booking_param}={booking_id}"
+    return f"{site}{booking_endpoint}?{booking_param}={booking_id}"
 
 
 def get_county_info(county: str, key: str, default: Any = None) -> Any:
@@ -100,7 +103,7 @@ def ensure_json_response(response: scrapy.http.Response) -> Any:
 
     Parameters
     ----------
-    response : scrapy.http.Reponse
+    response : scrapy.http.Response
         The scrapy response.
 
     Returns
@@ -115,3 +118,19 @@ def ensure_json_response(response: scrapy.http.Response) -> Any:
     if not hasattr(response, "json"):
         raise InvalidResponseError
     return response.json()
+
+
+def stringify_dict(dirty_dict: dict[str, Any]) -> dict[str, str]:
+    """Convert all of a dictionary's values to strings.
+
+    Parameters
+    ----------
+    dirty_dict : dict[str, Any]
+        The dictionary to stringify
+
+    Returns
+    -------
+    dict[str, str]
+        The stringified dictionary.
+    """
+    return {key: str(value) for (key, value) in dirty_dict.items()}
