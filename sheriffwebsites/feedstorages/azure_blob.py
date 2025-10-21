@@ -37,11 +37,9 @@ class AzureBlobFeedStorage(BlockingFeedStorage):
         self._account_url = self.feed_options.get("account_url") or os.getenv(
             "AZURE_STORAGE_ACCOUNT_URL"
         )
-        self._connection_string = self.feed_options.get("connection_string") or os.getenv(
-            "AZURE_STORAGE_CONNECTION_STRING"
-        )
-        if not self._account_url and not self._connection_string:
-            raise RuntimeError("account_url or connection_string are required for MSI auth")
+        self._connection_string = self.feed_options.get(
+            "connection_string"
+        ) or os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 
     def _get_service(self):
         """Get the Azure Blob Service client."""
@@ -51,6 +49,10 @@ class AzureBlobFeedStorage(BlockingFeedStorage):
         credential = DefaultAzureCredential()
         if self._connection_string:
             return BlobServiceClient.from_connection_string(self._connection_string)
+        if not self._account_url:
+            raise RuntimeError(
+                "account_url or connection_string are required for MSI auth"
+            )
         return BlobServiceClient(account_url=self._account_url, credential=credential)
 
     def _store_in_thread(self, file):
@@ -60,9 +62,10 @@ class AzureBlobFeedStorage(BlockingFeedStorage):
 
         content_settings = ContentSettings(content_type="text/csv; charset=utf-8")
         service = self._get_service()
+        # Create the container if it doesn't exist.
         try:
             service.get_container_client(self.container).create_container()
-        except:
+        except:  # noqa E722
             pass
         blob = service.get_blob_client(self.container, self.blob_path)
         blob.upload_blob(data, overwrite=True, content_settings=content_settings)

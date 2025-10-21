@@ -1,5 +1,0 @@
-- Categorize charges into UCR offenses
-- Maybe try AI for categorizing misdemeanors vs. felony
-- Re presentation, maybe lean towards scrollytelling instead of dashboard
-- https://www.urban.org/sites/default/files/2022-03/2000510-data-walks-an-innovative-way-to-share-data-with-communities.pdf
-- Name data visualizations with takeaways

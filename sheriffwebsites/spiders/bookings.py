@@ -8,6 +8,7 @@ import scrapy
 
 from sheriffwebsites.items import BookingItem
 from sheriffwebsites.utils import (
+    delist_maybe,
     ensure_json_response,
     get_booking_url,
     get_county_info,

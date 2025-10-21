@@ -9,3 +9,9 @@ wheels/
 # Virtual environments
 .venv
 .coverage
+
+# Local environments
+.env
+
+# Local notes
+_notes.txt
