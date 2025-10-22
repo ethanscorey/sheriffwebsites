@@ -146,7 +146,7 @@ SHERIFF_SITES = {
     "Wagoner": {
         "site": "https://wagonercountyso.org",
         "booking_endpoint": "/dmxConnect/api/Booking/getBookie.php",
-        "key": "bookie",
+        "key": "queryInmate",
     },
     "Washington": {"site": "https://www.washingtoncosheriff.com", "key": "bookie"},
 }
